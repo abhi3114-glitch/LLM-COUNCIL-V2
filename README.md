@@ -37,7 +37,7 @@ This project significantly expands upon the original concept (e.g., karpathy/llm
     *   Displayed as a competitive leaderboard.
 
 3.  **Stage 3: The Chairman's Verdict**
-    *   A highly capable "Chairman" model (e.g., Llama 3.3 70B) synthesizes the best insights from all responses and rankings into one final, authoritative answer.
+    *   A highly capable "Chairman" model (currently **Gemini 2.5 Flash**) synthesizes the best insights from all responses and rankings into one final, authoritative answer.
     *   Presented in a premium "Hero Card".
 
 ### Premium UI/UX
