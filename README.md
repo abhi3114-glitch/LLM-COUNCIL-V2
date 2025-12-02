@@ -111,6 +111,40 @@ This project significantly expands upon the original concept (e.g., karpathy/llm
 
 ---
 
+## 🌍 Deployment Guide
+
+### 1. Backend Hosting (Render)
+We recommend **Render** for its free tier and ease of use with Python/FastAPI.
+
+1.  Push your code to GitHub.
+2.  Sign up at [render.com](https://render.com).
+3.  Click **New +** -> **Web Service**.
+4.  Connect your GitHub repository.
+5.  **Settings**:
+    *   **Root Directory**: `.` (leave empty)
+    *   **Build Command**: `pip install -r requirements.txt`
+    *   **Start Command**: `uvicorn backend.main:app --host 0.0.0.0 --port $PORT`
+6.  **Environment Variables**: Add your `OPENROUTER_API_KEY`, `GOOGLE_API_KEY`, and `GROQ_API_KEY`.
+7.  Click **Create Web Service**. Copy the URL (e.g., `https://llm-council-api.onrender.com`).
+
+### 2. Frontend Hosting (Vercel)
+We recommend **Vercel** for the React frontend.
+
+1.  Sign up at [vercel.com](https://vercel.com).
+2.  Click **Add New...** -> **Project**.
+3.  Import your GitHub repository.
+4.  **Settings**:
+    *   **Framework Preset**: Vite
+    *   **Root Directory**: `frontend`
+5.  **Environment Variables**:
+    *   Create a variable named `VITE_API_URL`.
+    *   Set its value to your **Render Backend URL** (e.g., `https://llm-council-api.onrender.com`).
+6.  Click **Deploy**.
+
+**Note**: You'll need to update `frontend/src/api.js` to use `import.meta.env.VITE_API_URL` instead of hardcoded `localhost` if you haven't already.
+
+---
+
 ## Tech Stack
 
 *   **Frontend**: React, Vite, CSS Modules (Custom Design System)
