@@ -19,7 +19,7 @@ COUNCIL_MODELS = [
 ]
 
 # Chairman model - synthesizes final response
-CHAIRMAN_MODEL = "llama-3.3-70b-versatile"
+CHAIRMAN_MODEL = "gemini-2.5-flash"
 
 # OpenRouter API endpoint
 OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
