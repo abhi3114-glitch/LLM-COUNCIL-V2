@@ -1,29 +1,23 @@
-"""OpenRouter API client for making LLM requests."""
+"""Unified LLM Client for routing requests to different providers."""
 
 import httpx
+import asyncio
 from typing import List, Dict, Any, Optional
 from .config import OPENROUTER_API_KEY, OPENROUTER_API_URL
+from .gemini_client import query_gemini
+from .groq_client import query_groq
 
 
-async def query_model(
+async def query_openrouter(
     model: str,
     messages: List[Dict[str, str]],
     timeout: float = 120.0
 ) -> Optional[Dict[str, Any]]:
-    """
-    Query a single model via OpenRouter API.
-
-    Args:
-        model: OpenRouter model identifier (e.g., "openai/gpt-4o")
-        messages: List of message dicts with 'role' and 'content'
-        timeout: Request timeout in seconds
-
-    Returns:
-        Response dict with 'content' and optional 'reasoning_details', or None if failed
-    """
+    """Query OpenRouter API (fallback/default)."""
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
         "Content-Type": "application/json",
+        "HTTP-Referer": "http://localhost:5173", # Optional, for including your app on openrouter.ai rankings
     }
 
     payload = {
@@ -49,8 +43,30 @@ async def query_model(
             }
 
     except Exception as e:
-        print(f"Error querying model {model}: {e}")
+        print(f"Error querying OpenRouter model {model}: {e}")
         return None
+
+
+async def query_model(
+    model: str,
+    messages: List[Dict[str, str]],
+    timeout: float = 120.0
+) -> Optional[Dict[str, Any]]:
+    """
+    Query a single model, routing to the appropriate provider.
+    """
+    # Routing Logic
+    if "gemini" in model.lower() and "/" not in model:
+        # Direct Google Gemini (e.g. "gemini-2.0-flash-exp")
+        return await query_gemini(model, messages, timeout)
+    
+    if any(x in model.lower() for x in ["llama", "mixtral", "gemma"]) and "/" not in model:
+        # Direct Groq (e.g. "llama-3.3-70b-versatile")
+        # Note: Groq models usually don't have a slash, OpenRouter ones do (provider/model)
+        return await query_groq(model, messages, timeout)
+
+    # Default to OpenRouter
+    return await query_openrouter(model, messages, timeout)
 
 
 async def query_models_parallel(
@@ -59,16 +75,7 @@ async def query_models_parallel(
 ) -> Dict[str, Optional[Dict[str, Any]]]:
     """
     Query multiple models in parallel.
-
-    Args:
-        models: List of OpenRouter model identifiers
-        messages: List of message dicts to send to each model
-
-    Returns:
-        Dict mapping model identifier to response dict (or None if failed)
     """
-    import asyncio
-
     # Create tasks for all models
     tasks = [query_model(model, messages) for model in models]
 

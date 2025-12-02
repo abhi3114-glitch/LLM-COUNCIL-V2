@@ -1,15 +1,25 @@
-* {
-  box-sizing: border-box;
-}
-
 .app {
   display: flex;
   height: 100vh;
   width: 100vw;
   overflow: hidden;
-  background: #ffffff;
-  color: #333;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  background-color: var(--color-background);
+}
+
+/* Sidebar is handled in Sidebar.css, but we ensure it doesn't shrink */
+.sidebar {
+  flex-shrink: 0;
+  z-index: 10;
+}
+
+/* Main content area */
+.chat-interface {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  position: relative;
+  background-color: var(--color-background);
+  min-width: 0;
+  /* Prevent flex item from overflowing */
 }

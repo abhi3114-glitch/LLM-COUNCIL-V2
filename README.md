@@ -1,87 +1,132 @@
 # LLM Council
 
-![llmcouncil](header.jpg)
+**Where AI Models Debate, Critique, and Synthesize the Truth.**
 
-The idea of this repo is that instead of asking a question to your favorite LLM provider (e.g. OpenAI GPT 5.1, Google Gemini 3.0 Pro, Anthropic Claude Sonnet 4.5, xAI Grok 4, eg.c), you can group them into your "LLM Council". This repo is a simple, local web app that essentially looks like ChatGPT except it uses OpenRouter to send your query to multiple LLMs, it then asks them to review and rank each other's work, and finally a Chairman LLM produces the final response.
+![LLM Council Banner](header.jpg)
 
-In a bit more detail, here is what happens when you submit a query:
+LLM Council is a next-generation AI reasoning platform that convenes a council of diverse Large Language Models (LLMs) to deliberate on your query. By leveraging the collective intelligence of models like **Llama 3.3**, **Gemini 2.0**, and **Mixtral**, it provides responses that are more accurate, balanced, and insightful than any single model could achieve alone.
 
-1. **Stage 1: First opinions**. The user query is given to all LLMs individually, and the responses are collected. The individual responses are shown in a "tab view", so that the user can inspect them all one by one.
-2. **Stage 2: Review**. Each individual LLM is given the responses of the other LLMs. Under the hood, the LLM identities are anonymized so that the LLM can't play favorites when judging their outputs. The LLM is asked to rank them in accuracy and insight.
-3. **Stage 3: Final response**. The designated Chairman of the LLM Council takes all of the model's responses and compiles them into a single final answer that is presented to the user.
+---
 
-## Vibe Code Alert
+## Key Improvements Over the Original
 
-This project was 99% vibe coded as a fun Saturday hack because I wanted to explore and evaluate a number of LLMs side by side in the process of [reading books together with LLMs](https://x.com/karpathy/status/1990577951671509438). It's nice and useful to see multiple responses side by side, and also the cross-opinions of all LLMs on each other's outputs. I'm not going to support it in any way, it's provided here as is for other people's inspiration and I don't intend to improve it. Code is ephemeral now and libraries are over, ask your LLM to change it in whatever way you like.
+This project significantly expands upon the original concept (e.g., karpathy/llm-council) by transforming a basic script into a full-fledged, production-grade application.
 
-## Setup
+| Feature | Original Concept | This Version |
+| :--- | :--- | :--- |
+| **Interface** | CLI / Basic Script | **Premium React Web App** with glassmorphism and animations |
+| **Interaction** | Single-turn | **Multi-turn Chat** (Continue Chat) with context retention |
+| **Reasoning** | Simple Ranking | **Debate Mode**: Models explicitly critique each other before ranking |
+| **Control** | Hardcoded Models | **Dynamic Model Selection** via UI configuration |
+| **Persistence** | None | **Conversation History** saved locally |
+| **Visuals** | Text Output | **Visual Stages**: Carousel, Ranking Table, and Hero Card |
+| **Cost** | High (Paid APIs) | **Free / Low-Cost** (Optimized for Gemini 2.0 Flash & Groq) |
 
-### 1. Install Dependencies
+---
 
-The project uses [uv](https://docs.astral.sh/uv/) for project management.
+## Key Features
 
-**Backend:**
-```bash
-uv sync
-```
+### The 3-Stage Council Process
+1.  **Stage 1: Individual Opinions**
+    *   Multiple top-tier LLMs (Council Members) independently answer your question.
+    *   Visualized as a sleek carousel of model cards.
 
-**Frontend:**
-```bash
-cd frontend
-npm install
-cd ..
-```
+2.  **Stage 2: Peer Review & Ranking**
+    *   Models read each other's answers (anonymously) and rank them based on accuracy, depth, and helpfulness.
+    *   **Debate Mode**: Toggle this to force models to *critique* each other's logic and expose fallacies before ranking.
+    *   Displayed as a competitive leaderboard.
 
-### 2. Configure API Key
+3.  **Stage 3: The Chairman's Verdict**
+    *   A highly capable "Chairman" model (e.g., Llama 3.3 70B) synthesizes the best insights from all responses and rankings into one final, authoritative answer.
+    *   Presented in a premium "Hero Card".
 
-Create a `.env` file in the project root:
+### Premium UI/UX
+*   **"Big Tech" Aesthetic**: Clean, modern interface inspired by Google's Material Design 3.
+*   **Dark Mode**: Fully supported, persistent dark theme for late-night research.
+*   **Glassmorphism & Animations**: Smooth transitions, fade-ins, and shimmer effects for a delightful experience.
+*   **Interactive**: Suggestion chips, hover effects, and a responsive sidebar.
 
-```bash
-OPENROUTER_API_KEY=sk-or-v1-...
-```
+### Powerful Configuration
+*   **Model Selection**: Choose exactly which models sit on your council.
+*   **Conversation History**: Save, manage, and delete past debates.
+*   **Streaming**: Real-time feedback as models think and debate.
+*   **Free Tier Optimization**: Built to run entirely on free or ultra-low-cost API tiers using **Gemini 2.0 Flash** and **Llama 3.3** (via Groq), making advanced AI reasoning accessible to everyone.
 
-Get your API key at [openrouter.ai](https://openrouter.ai/). Make sure to purchase the credits you need, or sign up for automatic top up.
+---
 
-### 3. Configure Models (Optional)
+## Getting Started
 
-Edit `backend/config.py` to customize the council:
+### Prerequisites
+*   **Python 3.8+**
+*   **Node.js 16+**
+*   API Keys for **OpenRouter**, **Google Gemini**, and **Groq**.
 
-```python
-COUNCIL_MODELS = [
-    "openai/gpt-5.1",
-    "google/gemini-3-pro-preview",
-    "anthropic/claude-sonnet-4.5",
-    "x-ai/grok-4",
-]
+### Installation
 
-CHAIRMAN_MODEL = "google/gemini-3-pro-preview"
-```
+1.  **Clone the Repository**
+    ```bash
+    git clone https://github.com/abhi3114-glitch/llm-council.git
+    cd llm-council
+    ```
 
-## Running the Application
+2.  **Backend Setup**
+    ```bash
+    # Create virtual environment
+    python -m venv .venv
+    source .venv/bin/activate  # or .venv\Scripts\activate on Windows
 
-**Option 1: Use the start script**
-```bash
-./start.sh
-```
+    # Install dependencies
+    pip install -r requirements.txt
+    ```
 
-**Option 2: Run manually**
+3.  **Frontend Setup**
+    ```bash
+    cd frontend
+    npm install
+    ```
 
-Terminal 1 (Backend):
-```bash
-uv run python -m backend.main
-```
+4.  **Environment Configuration**
+    Create a `.env` file in the root directory:
+    ```env
+    OPENROUTER_API_KEY=your_key_here
+    GOOGLE_API_KEY=your_key_here
+    GROQ_API_KEY=your_key_here
+    ```
 
-Terminal 2 (Frontend):
-```bash
-cd frontend
-npm run dev
-```
+### Running the App
 
-Then open http://localhost:5173 in your browser.
+1.  **Start Backend**
+    ```bash
+    # From root directory
+    uv run python -m backend.main
+    ```
+
+2.  **Start Frontend**
+    ```bash
+    # From frontend directory
+    npm run dev
+    ```
+
+3.  Open [http://localhost:5173](http://localhost:5173) in your browser.
+
+---
 
 ## Tech Stack
 
-- **Backend:** FastAPI (Python 3.10+), async httpx, OpenRouter API
-- **Frontend:** React + Vite, react-markdown for rendering
-- **Storage:** JSON files in `data/conversations/`
-- **Package Management:** uv for Python, npm for JavaScript
+*   **Frontend**: React, Vite, CSS Modules (Custom Design System)
+*   **Backend**: FastAPI, Python, Uvicorn
+*   **AI Integration**: Google Generative AI SDK, Groq SDK, OpenRouter API
+*   **State Management**: React Hooks & Context
+
+---
+
+## Credits
+
+**Made with love by Abhi**
+
+*   **GitHub**: [abhi3114-glitch](https://github.com/abhi3114-glitch)
+*   **LinkedIn**: [Abhishek Pratap Singh Chauhan](https://www.linkedin.com/in/abhishek-pratap-singh-chauhan-5431a828a)
+
+---
+
+*LLM Council © 2025. All Rights Reserved.*

@@ -10,7 +10,7 @@ import json
 import asyncio
 
 from . import storage
-from .council import run_full_council, generate_conversation_title, stage1_collect_responses, stage2_collect_rankings, stage3_synthesize_final, calculate_aggregate_rankings
+from .council import run_full_council, generate_conversation_title, stage1_collect_responses, stage2_collect_rankings, stage2_debate, stage3_synthesize_final, calculate_aggregate_rankings
 
 app = FastAPI(title="LLM Council API")
 
@@ -32,6 +32,8 @@ class CreateConversationRequest(BaseModel):
 class SendMessageRequest(BaseModel):
     """Request to send a message in a conversation."""
     content: str
+    active_models: List[str] = None
+    debate_mode: bool = False
 
 
 class ConversationMetadata(BaseModel):
@@ -54,6 +56,13 @@ class Conversation(BaseModel):
 async def root():
     """Health check endpoint."""
     return {"status": "ok", "service": "LLM Council API"}
+
+
+@app.get("/api/models")
+async def list_models():
+    """List available council models."""
+    from .config import COUNCIL_MODELS
+    return {"models": COUNCIL_MODELS}
 
 
 @app.get("/api/conversations", response_model=List[ConversationMetadata])
@@ -79,6 +88,15 @@ async def get_conversation(conversation_id: str):
     return conversation
 
 
+@app.delete("/api/conversations/{conversation_id}")
+async def delete_conversation(conversation_id: str):
+    """Delete a conversation."""
+    success = storage.delete_conversation(conversation_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    return {"status": "success", "message": "Conversation deleted"}
+
+
 @app.post("/api/conversations/{conversation_id}/message")
 async def send_message(conversation_id: str, request: SendMessageRequest):
     """
@@ -93,6 +111,16 @@ async def send_message(conversation_id: str, request: SendMessageRequest):
     # Check if this is the first message
     is_first_message = len(conversation["messages"]) == 0
 
+    # Retrieve existing messages for history
+    history = []
+    for msg in conversation["messages"]:
+        role = msg["role"]
+        if role == "user":
+            history.append({"role": "user", "content": msg["content"]})
+        elif role == "assistant":
+            if "stage3" in msg and "response" in msg["stage3"]:
+                history.append({"role": "assistant", "content": msg["stage3"]["response"]})
+
     # Add user message
     storage.add_user_message(conversation_id, request.content)
 
@@ -103,7 +131,10 @@ async def send_message(conversation_id: str, request: SendMessageRequest):
 
     # Run the 3-stage council process
     stage1_results, stage2_results, stage3_result, metadata = await run_full_council(
-        request.content
+        request.content,
+        request.active_models,
+        request.debate_mode,
+        history
     )
 
     # Add assistant message with all stages
@@ -139,7 +170,19 @@ async def send_message_stream(conversation_id: str, request: SendMessageRequest)
 
     async def event_generator():
         try:
-            # Add user message
+            # Retrieve existing messages for history
+            history = []
+            for msg in conversation["messages"]:
+                role = msg["role"]
+                if role == "user":
+                    history.append({"role": "user", "content": msg["content"]})
+                elif role == "assistant":
+                    # For assistant messages, we only want the final synthesized response (Stage 3)
+                    # to be part of the history for the next turn.
+                    if "stage3" in msg and "response" in msg["stage3"]:
+                        history.append({"role": "assistant", "content": msg["stage3"]["response"]})
+
+            # Add user message to storage (but not to history passed to council, as it's passed as user_query)
             storage.add_user_message(conversation_id, request.content)
 
             # Start title generation in parallel (don't await yet)
@@ -149,18 +192,25 @@ async def send_message_stream(conversation_id: str, request: SendMessageRequest)
 
             # Stage 1: Collect responses
             yield f"data: {json.dumps({'type': 'stage1_start'})}\n\n"
-            stage1_results = await stage1_collect_responses(request.content)
+            stage1_results = await stage1_collect_responses(request.content, request.active_models, history)
             yield f"data: {json.dumps({'type': 'stage1_complete', 'data': stage1_results})}\n\n"
 
-            # Stage 2: Collect rankings
+            # Stage 2: Collect rankings (or Debate)
             yield f"data: {json.dumps({'type': 'stage2_start'})}\n\n"
-            stage2_results, label_to_model = await stage2_collect_rankings(request.content, stage1_results)
+            
+            if request.debate_mode:
+                # Run Debate Mode
+                stage2_results, label_to_model = await stage2_debate(request.content, stage1_results, request.active_models)
+            else:
+                # Run Standard Ranking Mode
+                stage2_results, label_to_model = await stage2_collect_rankings(request.content, stage1_results, request.active_models)
+                
             aggregate_rankings = calculate_aggregate_rankings(stage2_results, label_to_model)
             yield f"data: {json.dumps({'type': 'stage2_complete', 'data': stage2_results, 'metadata': {'label_to_model': label_to_model, 'aggregate_rankings': aggregate_rankings}})}\n\n"
 
             # Stage 3: Synthesize final answer
             yield f"data: {json.dumps({'type': 'stage3_start'})}\n\n"
-            stage3_result = await stage3_synthesize_final(request.content, stage1_results, stage2_results)
+            stage3_result = await stage3_synthesize_final(request.content, stage1_results, stage2_results, history)
             yield f"data: {json.dumps({'type': 'stage3_complete', 'data': stage3_result})}\n\n"
 
             # Wait for title generation if it was started

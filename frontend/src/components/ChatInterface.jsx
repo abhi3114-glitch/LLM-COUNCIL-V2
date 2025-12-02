@@ -52,84 +52,94 @@ export default function ChatInterface({
     <div className="chat-interface">
       <div className="messages-container">
         {conversation.messages.length === 0 ? (
-          <div className="empty-state">
-            <h2>Start a conversation</h2>
-            <p>Ask a question to consult the LLM Council</p>
+          <div className="welcome-screen">
+            <h2>LLM Council</h2>
+            <p>Ask a question to convene the council of AI models. They will debate and synthesize the best possible answer for you.</p>
+            <div className="suggestion-chips">
+              <button onClick={() => setInput("Explain quantum computing like I'm 5")}>Explain quantum computing</button>
+              <button onClick={() => setInput("Write a python script to scrape a website")}>Python scraping script</button>
+              <button onClick={() => setInput("Is a tomato a fruit or a vegetable?")}>Tomato: Fruit or Veg?</button>
+            </div>
           </div>
         ) : (
           conversation.messages.map((msg, index) => (
-            <div key={index} className="message-group">
+            <div key={index} className="message-wrapper">
               {msg.role === 'user' ? (
-                <div className="user-message">
-                  <div className="message-label">You</div>
-                  <div className="message-content">
-                    <div className="markdown-content">
-                      <ReactMarkdown>{msg.content}</ReactMarkdown>
-                    </div>
-                  </div>
+                <div className="message-user">
+                  <ReactMarkdown>{msg.content}</ReactMarkdown>
                 </div>
               ) : (
-                <div className="assistant-message">
-                  <div className="message-label">LLM Council</div>
-
-                  {/* Stage 1 */}
-                  {msg.loading?.stage1 && (
-                    <div className="stage-loading">
-                      <div className="spinner"></div>
-                      <span>Running Stage 1: Collecting individual responses...</span>
+                <div className="message-assistant">
+                  {/* Stage 1: Individual Responses */}
+                  {(msg.loading?.stage1 || msg.stage1) && (
+                    <div className="stage-container">
+                      <div className="stage-header">Stage 1: Council Responses</div>
+                      {msg.loading?.stage1 && (
+                        <div className="loading-indicator">
+                          <div className="spinner"></div>
+                          <span>Gathering responses...</span>
+                        </div>
+                      )}
+                      {msg.stage1 && <Stage1 responses={msg.stage1} />}
                     </div>
                   )}
-                  {msg.stage1 && <Stage1 responses={msg.stage1} />}
 
-                  {/* Stage 2 */}
-                  {msg.loading?.stage2 && (
-                    <div className="stage-loading">
-                      <div className="spinner"></div>
-                      <span>Running Stage 2: Peer rankings...</span>
+                  {/* Stage 2: Debate/Ranking */}
+                  {(msg.loading?.stage2 || msg.stage2) && (
+                    <div className="stage-container">
+                      <div className="stage-header">Stage 2: Peer Review</div>
+                      {msg.loading?.stage2 && (
+                        <div className="loading-indicator">
+                          <div className="spinner"></div>
+                          <span>Debating and ranking...</span>
+                        </div>
+                      )}
+                      {msg.stage2 && (
+                        <Stage2
+                          rankings={msg.stage2}
+                          labelToModel={msg.metadata?.label_to_model}
+                          aggregateRankings={msg.metadata?.aggregate_rankings}
+                        />
+                      )}
                     </div>
                   )}
-                  {msg.stage2 && (
-                    <Stage2
-                      rankings={msg.stage2}
-                      labelToModel={msg.metadata?.label_to_model}
-                      aggregateRankings={msg.metadata?.aggregate_rankings}
-                    />
-                  )}
 
-                  {/* Stage 3 */}
-                  {msg.loading?.stage3 && (
-                    <div className="stage-loading">
-                      <div className="spinner"></div>
-                      <span>Running Stage 3: Final synthesis...</span>
+                  {/* Stage 3: Final Synthesis */}
+                  {(msg.loading?.stage3 || msg.stage3) && (
+                    <div className="stage-container">
+                      <div className="stage-header">Stage 3: Chairman's Synthesis</div>
+                      {msg.loading?.stage3 && (
+                        <div className="loading-indicator">
+                          <div className="spinner"></div>
+                          <span>Synthesizing final answer...</span>
+                        </div>
+                      )}
+                      {msg.stage3 && <Stage3 finalResponse={msg.stage3} />}
                     </div>
                   )}
-                  {msg.stage3 && <Stage3 finalResponse={msg.stage3} />}
                 </div>
               )}
             </div>
           ))
         )}
-
-        {isLoading && (
-          <div className="loading-indicator">
-            <div className="spinner"></div>
-            <span>Consulting the council...</span>
-          </div>
-        )}
-
         <div ref={messagesEndRef} />
       </div>
 
-      {conversation.messages.length === 0 && (
-        <form className="input-form" onSubmit={handleSubmit}>
+      <div className="input-form">
+        <form className="input-wrapper" onSubmit={handleSubmit}>
           <textarea
             className="message-input"
-            placeholder="Ask your question... (Shift+Enter for new line, Enter to send)"
+            placeholder="Ask the council..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             disabled={isLoading}
-            rows={3}
+            rows={1}
+            style={{ height: 'auto', minHeight: '24px' }}
+            onInput={(e) => {
+              e.target.style.height = 'auto';
+              e.target.style.height = e.target.scrollHeight + 'px';
+            }}
           />
           <button
             type="submit"
@@ -139,7 +149,7 @@ export default function ChatInterface({
             Send
           </button>
         </form>
-      )}
+      </div>
     </div>
   );
 }
